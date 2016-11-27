@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "general.h"
 
 double* multimtrx (const int dimension, const double* a, const double* b)
 {
@@ -25,18 +26,19 @@ double mabs (double x)
         return (x < 0) ? -x : x;
 }
 
-double* Pcreate (const double* A, const int dimension)
+permut* Pcreate (const double* A, const int dimension)
 {
 	if (dimension < 0)
 	{
 		printf ("Incorrect dimension\n");
 		return NULL;
 	}
-        double* P = (double*) malloc (dimension * dimension * sizeof (double));
+	permut* Pinfo = (permut*) malloc (sizeof (permut));
+        Pinfo->P = (double*) malloc (dimension * dimension * sizeof (double));
         int i, j, k;
         for (i = 0; i < dimension; i++)
                 for (j = 0; j < dimension; j++)
-                        P[i * dimension + j] = (i == j); 
+                        Pinfo->P[i * dimension + j] = (i == j); 
         for (i = 0; i < dimension; i++)
         {
                 int maxj = i;
@@ -46,12 +48,13 @@ double* Pcreate (const double* A, const int dimension)
                 if (maxj != i)
                         for (k = 0; k < dimension; k++)
                         {
-                                double tmp = P[i * dimension + k]; 
-                                P[i * dimension + k] = P[maxj * dimension + k]; 
-                                P[maxj * dimension + k] = tmp;
+                                double tmp = Pinfo->P[i * dimension + k]; 
+                                Pinfo->P[i * dimension + k] = Pinfo->P[maxj * dimension + k]; 
+                                Pinfo->P[maxj * dimension + k] = tmp;
                         }
+		Pinfo->permut_number = k;
         }   
-        return P;
+        return Pinfo;
 }
 
 double** LUcreate (const double* A, const double* P, const int dimension)
