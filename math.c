@@ -1,23 +1,76 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <string.h>
+#include <errno.h>
 #include "general.h"
 
-double* multimtrx (const int dimension, const double* a, const double* b)
+void* pthr_multi (void* input)
+{
+	multi_parallel* info = (multi_parallel*) input;
+	int i, j, k;
+	int n = info->thread_num * info->rounds + info->last_steps;
+	printf ("Thread # %d has started its job\n", info->pthid);
+	for (i = info->pthid; i < n; i += info->thread_num)
+	{		
+		for (j = 0; j < n; j ++)
+		{
+			info->answer[i * n + j] = 0;
+			for (k = 0; k < n; k++)
+				if (i < n)
+					info->answer[i * n + j] += info->A[i * n + k] * info->B[k * n + j];
+		}
+	}
+	printf ("Thread # %d has finished its job\n", info->pthid);
+	return NULL;			
+}
+
+double* multimtrx (const int dimension, const double* a, const double* b, const int core_nu)
 {
 	if (dimension <= 0)
 	{
-		printf ("Incorrect dimension");
+		printf ("Incorrect dimension\n");
+		return NULL;
+	}
+	if (core_nu <= 0)
+	{
+		printf ("Incorrect core number\n");
 		return NULL;
 	}
 	double* result = (double*) malloc (dimension * dimension * sizeof(double));
-	int i, j, k;
-	for (i = 0; i < dimension; i++)
-		for (j = 0; j < dimension; j++)
-		{
-			result[i * dimension + j] = 0;
-			for (k = 0; k < dimension; k++)
-				result[i * dimension + j] += a[i * dimension + k] * b [k * dimension + j];
+	int i;
+	multi_parallel* data = (multi_parallel*) malloc (core_nu * sizeof (multi_parallel));
+	int thread_nu;
+	thread_nu = (dimension >= core_nu) ? core_nu : dimension;
+	for (i = 0; i < thread_nu; i++)
+	{
+		(data + i)->answer = result;
+		(data + i)->A = a;
+		(data + i)->B = b;
+		(data + i)->rounds = dimension/thread_nu;
+		(data + i)->last_steps = dimension % (thread_nu * data->rounds);
+		(data + i)->pthid = i;
+		(data + i)->thread_num = thread_nu;
+	}
+	pthread_t* thr = (pthread_t*) malloc (thread_nu* sizeof(pthread_t));
+	for (i = 0; i < thread_nu; i++)
+	{	
+		errno = pthread_create (thr + i, NULL, pthr_multi, (void*)(data + i));
+		if (errno)
+		{	
+			printf ("%s\n", strerror (errno));
+			return NULL;
 		}
+	}
+	for (i = 0; i < thread_nu; i++)
+	{
+		errno = pthread_join (thr[i], NULL);
+		if (errno)
+		{
+			printf ("%s\n", strerror (errno));
+			return NULL;
+		}
+	}
 	return result;
 }
 
@@ -57,7 +110,7 @@ permut* Pcreate (const double* A, const int dimension)
         return Pinfo;
 }
 
-double** LUcreate (const double* A, const double* P, const int dimension)
+double** LUcreate (const double* A, const double* P, const int dimension, const int core_nu)
 {
 	if (dimension < 0)
 	{
@@ -66,7 +119,7 @@ double** LUcreate (const double* A, const double* P, const int dimension)
 	}
 	double* L = (double*) malloc (dimension * dimension * (sizeof (double)));
 	double* U = (double*) malloc (dimension * dimension * (sizeof (double)));
-	double* Apiv = multimtrx (dimension, P, A);
+	double* Apiv = multimtrx (dimension, P, A, core_nu);
 	int i, j, k;
 	for (i = 0; i < dimension; i++)
 	{
