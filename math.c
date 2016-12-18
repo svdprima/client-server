@@ -10,7 +10,7 @@ void* pthr_multi (void* input)
 	multi_parallel* info = (multi_parallel*) input;
 	int i, j, k;
 	int n = info->thread_num * info->rounds + info->last_steps;
-	printf ("Thread # %d has started its job\n", info->pthid);
+	//printf ("Thread # %d has started its job\n", info->pthid);
 	for (i = info->pthid; i < n; i += info->thread_num)
 	{		
 		for (j = 0; j < n; j ++)
@@ -21,23 +21,22 @@ void* pthr_multi (void* input)
 					info->answer[i * n + j] += info->A[i * n + k] * info->B[k * n + j];
 		}
 	}
-	printf ("Thread # %d has finished its job\n", info->pthid);
+	//printf ("Thread # %d has finished its job\n", info->pthid);
 	return NULL;			
 }
 
-double* multimtrx (const int dimension, const double* a, const double* b, const int core_nu)
+void multimtrx (const int dimension, const double* a, const double* b, double* result, const int core_nu)
 {
 	if (dimension <= 0)
 	{
 		printf ("Incorrect dimension\n");
-		return NULL;
+		return;
 	}
 	if (core_nu <= 0)
 	{
 		printf ("Incorrect core number\n");
-		return NULL;
+		return;
 	}
-	double* result = (double*) malloc (dimension * dimension * sizeof(double));
 	int i;
 	multi_parallel* data = (multi_parallel*) malloc (core_nu * sizeof (multi_parallel));
 	int thread_nu;
@@ -59,7 +58,7 @@ double* multimtrx (const int dimension, const double* a, const double* b, const 
 		if (errno)
 		{	
 			printf ("%s\n", strerror (errno));
-			return NULL;
+			return;
 		}
 	}
 	for (i = 0; i < thread_nu; i++)
@@ -68,10 +67,12 @@ double* multimtrx (const int dimension, const double* a, const double* b, const 
 		if (errno)
 		{
 			printf ("%s\n", strerror (errno));
-			return NULL;
+			return;
 		}
 	}
-	return result;
+	free (thr);
+	free (data);
+	return;
 }
 
 double mabs (double x)
@@ -110,16 +111,17 @@ permut* Pcreate (const double* A, const int dimension)
         return Pinfo;
 }
 
-double** LUcreate (const double* A, const double* P, const int dimension, const int core_nu)
+long long int determinant (const double* A, const permut* ptr, const int dimension, const int core_nu)
 {
 	if (dimension < 0)
 	{
 		printf ("Incorrect dimension\n");
-		return NULL;
+		return -1;
 	}
 	double* L = (double*) malloc (dimension * dimension * (sizeof (double)));
 	double* U = (double*) malloc (dimension * dimension * (sizeof (double)));
-	double* Apiv = multimtrx (dimension, P, A, core_nu);
+	double* Apiv = (double*) malloc (dimension * dimension * sizeof (double));
+	multimtrx (dimension, ptr->P, A, Apiv, core_nu);
 	int i, j, k;
 	for (i = 0; i < dimension; i++)
 	{
@@ -148,9 +150,11 @@ double** LUcreate (const double* A, const double* P, const int dimension, const 
 			}
 		}
 	}
+	long long answer = 1;
+	for (i = 0; i < dimension; i++)	
+		answer *= U[i* dimension + i];
 	free (Apiv);
-	double** result = (double**) malloc (2 * sizeof (double*));
-	result[0] = L;
-	result[1] = U;
-	return result;
+	free (L);
+	free (U);
+	return (ptr->permut_number % 2) ? -answer : answer;
 }

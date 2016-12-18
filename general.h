@@ -1,3 +1,4 @@
+#pragma once
 struct permut
 {
 	double* P;
@@ -18,6 +19,28 @@ struct multi_parallel
 };
 typedef struct multi_parallel multi_parallel;
 
-double* multimtrx (const int dimension, const double* a, const double* b, const int core_nu);
+struct mbuff 
+{
+	long mtype;
+	int data;
+};
+typedef struct mbuff mbuff;
+
+struct state
+{
+	long mtype;
+	int is_locked;
+};
+typedef struct state state;
+
+struct detcarry
+{
+	long mtype;
+	long long int deter;
+};
+typedef struct detcarry detcarry;
+
+int get_number (char* inp_string, const unsigned int buff_size, unsigned int* offset);
+void multimtrx (const int dimension, const double* a, const double* b, double* result, const int core_nu);
 permut* Pcreate (const double* A, const int dimension);
-double** LUcreate (const double* A, const double* P, const int dimension, const int core_nu);
+long long int determinant (const double* A, const permut* ptr, const int dimension, const int core_nu);
