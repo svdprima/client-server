@@ -26,13 +26,6 @@ struct mbuff
 };
 typedef struct mbuff mbuff;
 
-struct state
-{
-	long mtype;
-	int is_locked;
-};
-typedef struct state state;
-
 struct detcarry
 {
 	long mtype;
