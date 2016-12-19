@@ -22,6 +22,7 @@ mbuff* cont;
 state* lock;
 init* start;
 permut* pmtrx;
+detcarry* ptr;
 int msid;
 
 void eraser (int foo)
@@ -34,7 +35,9 @@ void eraser (int foo)
 		free (cont);
 		free (start);
 		free (lock);
+		free (pmtrx->P);
 		free (pmtrx);
+		free (ptr);
 		printf ("Everything has been cleaned\n");
 		exit (0);
 	}
@@ -88,7 +91,7 @@ int main ()
 	msid = msgget (token, IPC_CREAT | S_IRWXU);
 	flag = msid;
 	CHECK
-	state* lock = (state*) malloc (sizeof(lock));
+	lock = (state*) malloc (sizeof(lock));
 	lock->mtype = 2;
 	lock->is_locked = 0;
 	unsigned int client_count = 0;
@@ -111,7 +114,7 @@ int main ()
 		flag = msgrcv (msid, lock, sizeof (state), 2, 0);
 		CHECK
 		multimtrx (n, arr, a, arr + n * n, cores);
-		detcarry* ptr = (detcarry*) malloc (sizeof (detcarry));	
+		ptr = (detcarry*) malloc (sizeof (detcarry));	
 		ptr->mtype = 3;
 		ptr->deter = determinant (arr + n * n, pmtrx, n, cores);
 		flag = msgsnd (msid, ptr, sizeof(detcarry), 0);
