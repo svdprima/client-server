@@ -43,9 +43,14 @@ int main ()
 	state* lckd = (state*) malloc (sizeof(state));
 	lckd->mtype = 2;
 	lckd->is_locked = 1;
+	init* start = (init*) malloc (sizeof (init));
+	start->mtype = 17;
+	start->foo = 0;
+	flag = msgrcv (msid, start, sizeof (init), 17, 0);
+	CHECK	
 	flag = msgsnd (msid, box, sizeof(mbuff), 0);
 	CHECK
-	flag = msgrcv (msid, box, sizeof(mbuff), 0, 0);
+	flag = msgrcv (msid, box, sizeof(mbuff), 1, 0);
 	CHECK
 	if (box->data == -2)
 	{
@@ -57,7 +62,7 @@ int main ()
 		printf ("IPC protocol error\n");
 		return -1;
 	}
-	flag = msgrcv (msid, box, sizeof(mbuff), 0, 0);
+	flag = msgrcv (msid, box, sizeof(mbuff), 1, 0);
 	CHECK
 	const int shmid = box->data;
 	double* mtrxs = (double*) shmat (shmid, NULL, 0);
@@ -82,6 +87,7 @@ int main ()
 	}
 	printf ("The determinant is %lld\n", det->deter);
 	CHECK
+	free (start);
 	free (det);
 	free (lckd);
 	flag = shmctl (shmid, IPC_RMID, NULL);

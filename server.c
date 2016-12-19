@@ -20,6 +20,7 @@ int shmid;
 int cl_shmid;
 mbuff* cont;
 state* lock;
+init* start;
 permut* pmtrx;
 int msid;
 
@@ -31,6 +32,7 @@ void eraser (int foo)
 		shmctl (shmid, IPC_RMID, NULL);	
 		shmctl (cl_shmid, IPC_RMID, NULL);
 		free (cont);
+		free (start);
 		free (lock);
 		free (pmtrx);
 		printf ("Everything has been cleaned\n");
@@ -90,10 +92,15 @@ int main ()
 	lock->mtype = 2;
 	lock->is_locked = 0;
 	unsigned int client_count = 0;
+	start = (init*) malloc (sizeof (init));
+	start->mtype = 17;
+	start->foo = 1;
 	while (1)
 	{
 		signal (3, eraser);
-		flag = msgrcv (msid, cont, sizeof (mbuff), 0, 0);
+		flag = msgsnd (msid, start, sizeof (init), 0);
+		CHECK		
+		flag = msgrcv (msid, cont, sizeof (mbuff), 1, 0);
 		CHECK
 		cont->data = (cont->data != n) ? -2 : -1;
 		flag = msgsnd (msid, cont, sizeof (mbuff), 0);
